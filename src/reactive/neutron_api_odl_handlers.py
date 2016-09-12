@@ -35,10 +35,13 @@ def install_packages():
 def render_config(controller):
     neutron_api_odl.render_config(controller)
 
+@reactive.when('neutron-plugin-api-subordinate.connected')
+def configure_plugin(api_principle):
+    neutron_api_odl.configure_plugin(api_principle)
 
 @reactive.when_file_changed(neutron_api_odl.ML2_CONF)
 @reactive.when('neutron-plugin-api-subordinate.connected')
-def remote_restart(controller):
-    controller.request_restart()
+def remote_restart(api_principle):
+    api_principle.request_restart()
 
 
