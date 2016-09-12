@@ -31,21 +31,14 @@ def install_packages():
     reactive.set_state('charm.installed')
 
 
-@reactive.when('charm.installed')
-@reactive.when('neutron-plugin-api-subordinate.connected')
-def configure_plugin(neutron_plugin):
-    neutron_api_odl.configure_plugin(neutron_plugin)
-
-
 @reactive.when('odl-controller.access.available')
-def render_config(*args):
-    print("Rendering...")
-    neutron_api_odl.render_config(args)
+def render_config(controller):
+    neutron_api_odl.render_config(controller)
 
 
 @reactive.when_file_changed(neutron_api_odl.ML2_CONF)
 @reactive.when('neutron-plugin-api-subordinate.connected')
-def remote_restart(*args):
+def remote_restart(controller):
     controller.request_restart()
 
 

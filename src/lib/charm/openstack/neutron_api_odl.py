@@ -27,8 +27,8 @@ def install():
     NeutronAPIODLCharm.singleton.install()
 
 
-def render_config(interfaces_list):
-    NeutronAPIODLCharm.singleton.render_with_interfaces(interfaces_list)
+def render_config(controller_interface):
+    NeutronAPIODLCharm.singleton.render_with_interfaces([controller_interface])
 
 
 class NeutronAPIODLCharm(charms_openstack.charm.OpenStackCharm):
