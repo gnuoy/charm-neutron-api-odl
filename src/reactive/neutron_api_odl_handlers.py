@@ -37,6 +37,15 @@ def configure_plugin(neutron_plugin):
     neutron_api_odl.configure_plugin(neutron_plugin)
 
 
-@reactive.when('controller-api.access.available')
-def render_config(controller):
-    neutron_api_odl.render_config(controller)
+@reactive.when('odl-controller.access.available')
+def render_config(*args):
+    print("Rendering...")
+    neutron_api_odl.render_config(args)
+
+
+@reactive.when_file_changed(neutron_api_odl.ML2_CONF)
+@reactive.when('neutron-plugin-api-subordinate.connected')
+def remote_restart(*args):
+    controller.request_restart()
+
+
