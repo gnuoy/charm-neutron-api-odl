@@ -14,34 +14,33 @@
 
 import charms.reactive as reactive
 
+import charms_openstack.charm as charm
+
 # This charm's library contains all of the handler code associated with
-# aodh
+# neutron_api_odl
 import charm.openstack.neutron_api_odl as neutron_api_odl
 
 
-# Minimal inferfaces required for operation
-MINIMAL_INTERFACES = [
-    'controller-api.access.available',
-]
-
-
-@reactive.when_not('charm.installed')
-def install_packages():
-    neutron_api_odl.install()
-    reactive.set_state('charm.installed')
+charm.use_defaults(
+    'charm.installed',
+    'config.changed',
+    'update-status')
 
 
 @reactive.when('odl-controller.access.available')
-def render_config(controller):
-    neutron_api_odl.render_config(controller)
+def render_config(*args):
+    with charm.provide_charm_instance() as neutron_api_odl_charm:
+        neutron_api_odl_charm.render_with_interfaces(args)
+        neutron_api_odl_charm.assess_status()
+
 
 @reactive.when('neutron-plugin-api-subordinate.connected')
 def configure_plugin(api_principle):
-    neutron_api_odl.configure_plugin(api_principle)
+    with charm.provide_charm_instance() as neutron_api_odl_charm:
+        neutron_api_odl_charm.configure_plugin(api_principle)
+
 
 @reactive.when_file_changed(neutron_api_odl.ML2_CONF)
 @reactive.when('neutron-plugin-api-subordinate.connected')
 def remote_restart(api_principle):
     api_principle.request_restart()
-
-

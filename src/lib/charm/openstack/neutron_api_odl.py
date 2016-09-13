@@ -16,59 +16,38 @@ import charms_openstack.adapters
 import charms_openstack.charm
 import charmhelpers.contrib.openstack.utils as ch_utils
 
+
 ML2_CONF = '/etc/neutron/plugins/ml2/ml2_conf.ini'
 VLAN = 'vlan'
 VXLAN = 'vxlan'
 GRE = 'gre'
 OVERLAY_NET_TYPES = [VXLAN, GRE]
 
+# select the default release function
+OPENSTACK_RELEASE_KEY = 'neutron-api-odl.openstack-release-version'
+charms_openstack.charm.use_defaults('charm.default-select-release')
 
-def install():
-    """Use the singleton from the NeutronAPIODLCharm to install the packages on the
-    unit
 
-    @returns: None
-    """
-    NeutronAPIODLCharm.singleton.install()
+@charms_openstack.adapters.config_property
+def overlay_net_types(config):
+    overlay_networks = config.overlay_network_type.split()
+    for overlay_net in overlay_networks:
+        if overlay_net not in OVERLAY_NET_TYPES:
+            raise ValueError(
+                'Unsupported overlay-network-type {}'.format(overlay_net))
+    return ','.join(overlay_networks)
 
-def configure_plugin(api_principle):
-    NeutronAPIODLCharm.singleton.configure_plugin(api_principle)
-
-def render_config(controller_interface):
-    NeutronAPIODLCharm.singleton.render_with_interfaces([controller_interface])
-
-class NeutronAPIODLConfigurationAdapter(charms_openstack.adapters.ConfigurationAdapter):
-
-    @property
-    def overlay_net_types(self):
-        overlay_networks = self.overlay_network_type.split()
-        for overlay_net in overlay_networks:
-            if overlay_net not in OVERLAY_NET_TYPES:
-                raise ValueError('Unsupported overlay-network-type %s'
-                                 % overlay_net)
-        return ','.join(overlay_networks)
-
-class NeutronAPIODLAdapters(charms_openstack.adapters.OpenStackRelationAdapters):
-    """
-    Adapters class for the NeutronAPIODL charm.
-    """
-
-    def __init__(self, relations):
-        super(NeutronAPIODLAdapters, self).__init__(
-            relations,
-            options_instance=NeutronAPIODLConfigurationAdapter())
 
 class NeutronAPIODLCharm(charms_openstack.charm.OpenStackCharm):
-
 
     name = 'neutron-api-odl'
     packages = ['neutron-common', 'neutron-plugin-ml2']
 
     required_relations = ['neutron-plugin-api-subordinate', 'odl-controller']
 
-    adapters_class = NeutronAPIODLAdapters
     restart_map = {ML2_CONF: []}
     release = 'icehouse'
+    adapters_class = charms_openstack.adapters.OpenStackRelationAdapters
 
     def __init__(self, release=None, **kwargs):
         """Custom initialiser for class
@@ -91,24 +70,9 @@ class NeutronAPIODLCharm(charms_openstack.charm.OpenStackCharm):
         return _packages
 
     def configure_plugin(self, api_principle):
-        # Add sections and tuples to insert values into neutron-server's
-        # neutron.conf e.g.
-        # principle_config = {
-        #     "neutron-api": {
-        #        "/etc/neutron/neutron.conf": {
-        #             "sections": {
-        #                 'DEFAULT': [
-        #                     ('key1', 'val1')
-        #                     ('key2', 'val2')
-        #                 ],
-        #                 'agent': [
-        #                     ('key3', 'val3')
-        #                 ],
-        #             }
-        #         }
-        #     }
-        # }
-
+        """Add sections and tuples to insert values into neutron-server's
+        neutron.conf
+        """
         inject_config = {
             "neutron-api": {
                 "/etc/neutron/neutron.conf": {
